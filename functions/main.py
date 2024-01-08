@@ -32,7 +32,6 @@ def get_all_users(req: https_fn.CallableRequest) -> any:
             user_doc = db.collection('Users').document(user.uid).get()
             if user_doc.exists:
                 try:
-                    print(f"user doc value: ${user_doc.get('masjid_allocated')}")
                     user_dict['masjid_allocated'] = [masjid.path.split("/")[1] for masjid in user_doc.get('masjid_allocated') ]
                     
                 except Exception as e:
@@ -40,7 +39,7 @@ def get_all_users(req: https_fn.CallableRequest) -> any:
                 
 
             users_list.append(user_dict)
-            return {"users": users_list}
+        return {"users": users_list}
     except Exception as e:
         raise https_fn.HttpsError(code=https_fn.FunctionsErrorCode.NOT_FOUND, message=f"An error Occurred{e}")
 
