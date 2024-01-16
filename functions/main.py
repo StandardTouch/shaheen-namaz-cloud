@@ -4,6 +4,10 @@
 
 from firebase_functions import https_fn, options
 from firebase_admin import initialize_app, auth, firestore, credentials
+import boto3
+import os
+import base64
+
 
 options.set_global_options(max_instances=50)
 
@@ -12,12 +16,51 @@ cred = credentials.Certificate("service_account.json")
 initialize_app(credential=cred)
 db = firestore.client()
 
+# register student
+# collection id - students-shaheen
+@https_fn.on_call()
+def register_student(req: https_fn.CallableRequest) -> any:
+    access_key = os.environ.get('aws.access_key')
+    secret_key = os.environ.get('aws.secret_key')
+
+
+
+
+    rekognition = boto3.client('rekognition',aws_access_key_id=access_key, aws_secret_access_key=secret_key, region_name="ap-south-1")
+
+    try:
+
+        # Assume 'image_data' is the key in the request's JSON body where the base64 encoded image is provided.
+        # Decode the base64 image
+        if 'image_data' not in req.data:
+            return {'error': 'image_data not provided in the request'}
+
+      
+
+        response = rekognition.index_faces(
+            CollectionId="students-shaheen",
+            Image={
+                'Bytes': req.data.get('image_data')
+            }
+        )
+        print(response)
+        return response
+        
+    except Exception as e:
+        print(f"An Error Occurred: {e}")
+        return {'error': str(e)}
+
+
+
+
+
 
 # get all Users
 
 @https_fn.on_call()
 def get_all_users(req: https_fn.CallableRequest) -> any:
     try:
+        
         users = auth.list_users()
         users_list = []
         for user in users.iterate_all():
