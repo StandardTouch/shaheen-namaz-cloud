@@ -20,31 +20,55 @@ db = firestore.client()
 # collection id - students-shaheen
 @https_fn.on_call()
 def register_student(req: https_fn.CallableRequest) -> any:
-    access_key = os.environ.get('aws.access_key')
-    secret_key = os.environ.get('aws.secret_key')
+    # access_key = os.environ.get('aws.access_key')
+    # secret_key = os.environ.get('aws.secret_key')
 
 
 
 
-    rekognition = boto3.client('rekognition',aws_access_key_id=access_key, aws_secret_access_key=secret_key, region_name="ap-south-1")
+    # todo - add environment variables in firebase
+
+    access_key = "AKIA6ODUZPV6BQGGG55H"
+    secret_key = "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"
+
+
+
+
+
 
     try:
 
+        rekognition = boto3.client('rekognition',aws_access_key_id=access_key, aws_secret_access_key=secret_key, region_name="ap-south-1")
         # Assume 'image_data' is the key in the request's JSON body where the base64 encoded image is provided.
         # Decode the base64 image
         if 'image_data' not in req.data:
             return {'error': 'image_data not provided in the request'}
 
-      
+        # Decode the base64 image
+        image_data = base64.b64decode(req.data.get('image_data'))
 
         response = rekognition.index_faces(
             CollectionId="students-shaheen",
             Image={
-                'Bytes': req.data.get('image_data')
-            }
+                'Bytes': image_data
+            },
+            MaxFaces=1
         )
-        print(response)
-        return response
+        if not response['FaceRecords']:
+            raise Exception("Face not found")
+        
+        # Extract FaceId from the response
+        face_id = response['FaceRecords'][0]['Face']['FaceId']
+
+        student_data = {
+            'name': req.data.get('name'),
+            'guardianNumber': req.data.get('guardianNumber'),
+            'streak': 0
+        }
+
+        db.collection('students').document(face_id).set(student_data)
+
+        return {'message': 'Student registered successfully', 'faceId': face_id}
         
     except Exception as e:
         print(f"An Error Occurred: {e}")
